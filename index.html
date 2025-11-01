@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>The House Price Predictor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+
+        .form-container {
+            padding: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #2c3e50;
+            font-size: 1.1em;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        .predict-btn {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: white;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            transition: transform 0.2s;
+        }
+
+        .predict-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .result {
+            margin-top: 25px;
+            padding: 20px;
+            border-radius: 10px;
+            display: none;
+            animation: fadeIn 0.5s;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 2px solid #c3e6cb;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 2px solid #f5c6cb;
+        }
+
+        .price-display {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #2c3e50;
+            text-align: center;
+            margin: 15px 0;
+        }
+
+        .details {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-family: monospace;
+            white-space: pre-line;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .location-hint {
+            font-size: 0.9em;
+            color: #7f8c8d;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>The House Price Predictor</h1>
+            <p>Get instant price estimates by entering the house data</p>
+        </div>
+
+        <div class="form-container">
+            <form id="predictionForm">
+                <div class="form-group">
+                    <label for="size">House Size (sq ft)</label>
+                    <input type="number" id="size" name="size" required
+                           min="500" max="10000" placeholder="e.g., 2000">
+                </div>
+
+                <div class="form-group">
+                    <label for="bedrooms">Number of Bedrooms</label>
+                    <input type="number" id="bedrooms" name="bedrooms" required
+                           min="1" max="10" placeholder="e.g., 3">
+                </div>
+
+                <div class="form-group">
+                    <label for="age">House Age (years)</label>
+                    <input type="number" id="age" name="age" required
+                           min="0" max="100" placeholder="e.g., 10">
+                </div>
+
+                <div class="form-group">
+                    <label for="location">Location Type</label>
+                    <select id="location" name="location" required>
+                        <option value="">Select Location</option>
+                        <option value="1">Urban (City Center)</option>
+                        <option value="2">Suburban (Residential Area)</option>
+                        <option value="3">Rural (Countryside)</option>
+                    </select>
+                    <div class="location-hint">Urban areas typically have higher prices</div>
+                </div>
+
+                <button type="submit" class="predict-btn">
+                    Predict House Price
+                </button>
+            </form>
+
+            <div id="result" class="result"></div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('predictionForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const formData = new FormData(this);
+            const resultDiv = document.getElementById('result');
+            const button = this.querySelector('button');
+
+            // Show loading state
+            button.innerHTML = 'Predicting...';
+            button.disabled = true;
+
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <h3>Price Prediction</h3>
+                            <div class="price-display">${data.predicted_price}</div>
+                            <div class="details">${data.details}</div>
+                            <p style="margin-top: 15px; font-style: italic;">
+                                The estimations has made by AI
+                            </p>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <h3>Prediction Error</h3>
+                            <p>${data.error}</p>
+                        </div>
+                    `;
+                }
+
+                resultDiv.style.display = 'block';
+
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h3>Connection Error</h3>
+                        <p>Unable to connect to the prediction service. Please try again.</p>
+                    </div>
+                `;
+                resultDiv.style.display = 'block';
+            } finally {
+                // Reset button
+                button.innerHTML = 'Predict House Price';
+                button.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
